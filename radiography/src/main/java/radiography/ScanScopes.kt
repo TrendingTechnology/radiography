@@ -35,8 +35,25 @@ object ScanScopes {
   }
 
   /**
-   * Scans all Composables in all windows that have the `Modifier.testTag` modifier with the given
-   * [testTag].
+   * Scans only composables that have a [`Modifier.testTag`][androidx.compose.ui.platform.testTag]
+   * modifier with the given [testTag]. [All windows][AllWindowsScope] are searched by default, but
+   * you can limit where composables are found by passing another [ScanScope] to [inScope].
+   *
+   * Example:
+   * ```
+   * @Composable fun App() {
+   *   Column {
+   *     ActionBar()
+   *     Body(Modifier.testTag("app-body"))
+   *     BottomBar()
+   *   }
+   * }
+   *
+   * Radiography.scan(scanScope = composeTestTagScope("app-body"))
+   * ```
+   *
+   * To use test tags to filter out certain parts of your UI, use
+   * [radiography.compose.ComposableFilters.skipTestTagsFilter].
    */
   @ExperimentalRadiographyComposeApi
   @JvmStatic

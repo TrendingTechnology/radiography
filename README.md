@@ -32,7 +32,8 @@ val prettyHierarchy = Radiography.scan(viewStateRenderers = DefaultsNoPii +
     })
 ```
 
-You can print a subset of the view hierarchies.
+You can print a subset of the view hierarchies by specifying a `ScanScope`. By default, Radiography
+will scan all the windows owned by your app.
 
 ```kotlin
 // Extension function on View, renders starting from that view.
@@ -77,38 +78,73 @@ This sample app lives in this repo in the `sample` directory.
 
 ## Jetpack Compose support
 
-Radiography will automatically render Composables found in your view tree if the Compose Tooling
-library is on the classpath. If you're using Compose, this is likely already the case (the
+[Jetpack Compose](https://developer.android.com/jetpack/compose) is Google's new UI toolkit. It is
+currently in pre-release status, and changes frequently. However, if you're already experimenting
+with Compose in your apps, any UI that is defined in Compose will not show up as Android views.
+
+Radiography will automatically render composables found in your view tree if the Compose Tooling
+library is on the classpath. If you are using Compose, this is likely already the case (the
 `@Preview` annotation lives in the Tooling library). On the other hand, if you're not using Compose,
 Radiography won't bloat your app with transitive dependencies on any Compose artifacts.
 
 Compose releases frequently. If you are using Radiography with an unsupported version of Compose,
-or you don't depend on the Tooling library, then Radiography will include a message in the result
-asking you to upgrade Radiography or add the Tooling library, but this is optional.
+or you don't depend on the Tooling library, then Radiography will still try to detect compositions,
+but instead of rendering the actual hierarchy, it will just include a message asking you to upgrade
+Radiography or add the Tooling library.
 
 ### Compose usage
 
-Compose support is experimental right now, since Compose is still changing a lot on a regular basis.
+_Compose support is experimental right now, since Compose is still changing a lot on a regular
+basis._
 
-Composables can be filtered just like views, but instead of using view ID, you can either specify
-a test tag (as in the string passed to `Modifier.testTag()`), or match on any layout ID (as in
-`Modifier.layoutId()`).
-
+The only thing required for Radiography to render composables is to include the tooling library as
+a dependency:
 ```kotlin
-// Filter out views with specific test tags.
-val prettyHierarchy = Radiography.scan(viewFilter = skipTestTagsFilter("debug drawer"))
-
-// Filter out views with specific layout IDs.
-val prettyHierarchy = Radiography.scan(viewFilter = skipLayoutIdsFilter { layoutId ->
-   layoutId == DebugDrawerLayoutId
-})
+dependencies {
+  implementation("androidx.ui:ui-tooling:1.0.0-alphaXY")
+}
 ```
 
-The `DefaultsNoPii` and `DefaultsIncludingPii` renderers already configure the Compose renderers as
-well. Additional compose-specific renderers can be found in the `ComposeLayoutRenderers` object.
-Custom Compose renderers cannot be created at this time, since we're still figuring out exactly
-what the best public API for that looks like. If you need a custom Compose renderer, please file
-an issue on this repo!
+### Rendering composables
+
+The `DefaultsNoPii` and `DefaultsIncludingPii` renderers include default Compose renderers – you
+don't need to do anything special. Additional Compose-specific renderers can be found in the
+`ComposableRenderers` object.
+
+To create a custom renderer for Compose, implement a `ViewStateRenderer` to handle values of type
+`ComposeView`. The `ComposeView` has a list of all the `Modifier`s that have been applied to the
+composable, including its [semantics](https://developer.android.com/reference/kotlin/androidx/compose/ui/semantics/SemanticsModifier?hl=en#semanticsConfiguration:androidx.compose.ui.semantics.SemanticsConfiguration).
+
+### Filtering composables
+
+Composables can be filtered as well. Compose doesn't have the concept of view IDs, but you
+can explicitly tag composables with strings using the [`testTag`](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/package-summary#(androidx.compose.ui.Modifier).testTag(kotlin.String))
+modifier, and then tell Radiography to only scan certain tags, or filter certain tags out.
+
+For example, say you have a screen that has a debug drawer, and some body content, like this:
+```kotlin
+@Composable fun App() {
+  ModalDrawerLayout(drawerContent = {
+    DebugDrawer(Modifier.testTag("debug-drawer"))
+  }) {
+    Column {
+      ActionBar()
+      Body(Modifier.testTag("app-body"))
+      BottomBar()
+    }
+  }
+}
+```
+
+To scan everything _but_ the debug drawer, use `skipTestTagsFilter`:
+```kotlin
+val prettyHierarchy = Radiography.scan(viewFilter = skipTestTagsFilter("debug-drawer"))
+```
+
+To _only_ scan the contents of the `Body` composable, use `composeTestTagScope`:
+```kotlin
+val prettyHierarchy = Radiography.scan(scanScope = composeTestTagScope("app-body"))
+```
 
 ### Compose example output
 
