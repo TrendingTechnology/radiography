@@ -14,7 +14,6 @@ import androidx.compose.material.TextField
 import androidx.compose.runtime.SlotTable
 import androidx.compose.runtime.currentComposer
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.node.Ref
 import androidx.compose.ui.platform.DensityAmbient
 import androidx.compose.ui.platform.testTag
@@ -38,7 +37,6 @@ import radiography.ScanScopes.composeTestTagScope
 import radiography.ViewStateRenderers.DefaultsIncludingPii
 import radiography.ViewStateRenderers.DefaultsNoPii
 import radiography.ViewStateRenderers.textViewRenderer
-import radiography.compose.ComposableFilters.skipLayoutIdsFilter
 import radiography.compose.ComposableFilters.skipTestTagsFilter
 import radiography.compose.ComposableRenderers.ComposeViewRenderer
 import radiography.compose.ExperimentalRadiographyComposeApi
@@ -216,23 +214,6 @@ class ComposeUiTest {
 
     val hierarchy = runOnIdle {
       Radiography.scan(viewFilter = skipTestTagsFilter("42"))
-    }
-
-    assertThat(hierarchy).contains("Box")
-    assertThat(hierarchy).doesNotContain("Button")
-  }
-
-  @Test fun skipLayoutIds() {
-    val layoutId = Any()
-
-    composeRule.setContent {
-      Box {
-        Button(modifier = Modifier.layoutId(layoutId), onClick = {}, content = {})
-      }
-    }
-
-    val hierarchy = runOnIdle {
-      Radiography.scan(viewFilter = skipLayoutIdsFilter { it === layoutId })
     }
 
     assertThat(hierarchy).contains("Box")

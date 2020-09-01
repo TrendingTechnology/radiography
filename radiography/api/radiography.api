@@ -91,7 +91,6 @@ public final class radiography/ViewsKt {
 
 public final class radiography/compose/ComposableFilters {
 	public static final field INSTANCE Lradiography/compose/ComposableFilters;
-	public static final fun skipLayoutIdsFilter (Lkotlin/jvm/functions/Function1;)Lradiography/ViewFilter;
 	public static final fun skipTestTagsFilter ([Ljava/lang/String;)Lradiography/ViewFilter;
 }
 
